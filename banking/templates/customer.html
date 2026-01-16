@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .section { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; }
+        input, button { margin: 5px; padding: 8px; }
+        #result { margin-top: 10px; font-weight: bold; }
+        #history { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Customer Portal</h1>
+        <p>Available accounts: 001 (Savings), 002 (Current)</p>
+        <a href="/">Back to Home</a> | <button onclick="exitApp()">Exit</button>
+
+        <div class="section">
+            <h2>Withdraw</h2>
+            <input type="text" id="wit-account" placeholder="Account ID">
+            <input type="number" id="wit-amount" placeholder="Amount" step="0.01">
+            <button onclick="withdraw()">Withdraw</button>
+            <div id="wit-result"></div>
+        </div>
+
+        <div class="section">
+            <h2>Transfer</h2>
+            <input type="text" id="trans-from" placeholder="From Account ID">
+            <input type="text" id="trans-to" placeholder="To Account ID">
+            <input type="number" id="trans-amount" placeholder="Amount" step="0.01">
+            <button onclick="transfer()">Transfer</button>
+            <div id="trans-result"></div>
+        </div>
+
+        <div class="section">
+            <h2>Check Balance</h2>
+            <input type="text" id="bal-account" placeholder="Account ID">
+            <button onclick="checkBalance()">Check Balance</button>
+            <div id="bal-result"></div>
+        </div>
+
+        <div class="section">
+            <h2>View History</h2>
+            <input type="text" id="hist-account" placeholder="Account ID">
+            <button onclick="viewHistory()">View History</button>
+            <div id="hist-result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function postData(url, data) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            return response.json();
+        }
+
+        async function withdraw() {
+            const account = document.getElementById('wit-account').value;
+            const amount = document.getElementById('wit-amount').value;
+            const result = await postData('/withdraw', { account_id: account, amount: amount });
+            document.getElementById('wit-result').innerText = result.success ? `New Balance: ₹${result.balance.toFixed(2)}` : result.message;
+        }
+
+        async function transfer() {
+            const fromId = document.getElementById('trans-from').value;
+            const toId = document.getElementById('trans-to').value;
+            const amount = document.getElementById('trans-amount').value;
+            const result = await postData('/transfer', { from_id: fromId, to_id: toId, amount: amount });
+            document.getElementById('trans-result').innerText = result.success ? `From Balance: ₹${result.from_balance.toFixed(2)}, To Balance: ₹${result.to_balance.toFixed(2)}` : result.message;
+        }
+
+        async function checkBalance() {
+            const account = document.getElementById('bal-account').value;
+            const result = await postData('/balance', { account_id: account });
+            document.getElementById('bal-result').innerText = result.success ? `Balance: ₹${result.balance.toFixed(2)}` : result.message;
+        }
+
+        async function viewHistory() {
+            const account = document.getElementById('hist-account').value;
+            const result = await postData('/history', { account_id: account });
+            if (result.success) {
+                let html = '<ul>';
+                result.history.forEach(item => {
+                    html += `<li>${item.time}: ${item.type} ₹${item.amount.toFixed(2)}</li>`;
+                });
+                html += '</ul>';
+                document.getElementById('hist-result').innerHTML = html;
+            } else {
+                document.getElementById('hist-result').innerText = result.message;
+            }
+        }
+
+        function exitApp() {
+            if (confirm("Are you sure you want to exit?")) {
+                window.location.href = "/";
+            }
+        }
+    </script>
+</body>
+</html>
